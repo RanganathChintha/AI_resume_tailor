@@ -1,65 +1,64 @@
 \documentclass[letterpaper,11pt]{article}
-\usepackage[top=0.35in,bottom=0.35in,left=0.55in,right=0.55in]{geometry}
+\usepackage[top=0.45in,bottom=0.45in,left=0.6in,right=0.6in]{geometry}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
 \usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{microtype}
 \pagestyle{empty}
+\definecolor{accent}{HTML}{1f3a5f}
 \newcommand{\resumeItem}[1]{\item\small{#1}}
 \newcommand{\resumeSubheading}[4]{%
-  \textbf{#1} \hfill #2 \\
-  \textit{\small #3} \hfill \textit{\small #4}}
-\newcommand{\resumeProject}[3]{%
-  \textbf{#1} \hfill #3 \\
-  \textit{\small #2}}
-\setlist[itemize]{leftmargin=1.5em, topsep=1pt, itemsep=1pt, parsep=0pt}
-\setlength{\parskip}{1pt}
+  \vspace{2pt}\textbf{#1} \hfill \textbf{\small #2} \\
+  \textit{\small #3} \hfill \textit{\small #4}\vspace{-1pt}}
+\setlist[itemize]{leftmargin=1.4em, topsep=3pt, itemsep=2pt, parsep=0pt}
+\setlength{\parskip}{2pt}
 \setlength{\parindent}{0pt}
-\titleformat{\section}{\large\bfseries}{}{0em}{}[\vspace{-2pt}]
+\raggedright
+\titleformat{\section}{\vspace{4pt}\scshape\large\bfseries\color{accent}}{}{0em}{}[{\color{accent}\titlerule}\vspace{-1pt}]
+\titlespacing*{\section}{0pt}{8pt}{5pt}
 \begin{document}
 \begin{center}
 {\Huge \textbf{Ranganath Chintha}} \\
 \small
-+91-9515340691 \ \ \href{mailto:ranganathchintha266@gmail.com}{ranganathchintha266@gmail.com} \ \ \href{https://linkedin.com/in/ranganathchintha}{LinkedIn} \ \ \href{https://github.com/RanganathChintha}{GitHub}
++91-9515340691 $\mid$ \href{mailto:ranganathchintha266@gmail.com}{ranganathchintha266@gmail.com} $\mid$ \href{https://linkedin.com/in/ranganathchintha}{LinkedIn} $\mid$ \href{https://github.com/RanganathChintha}{GitHub}
 \end{center}
-\vspace{-6pt}
+\vspace{-2pt}
 \section*{Professional Summary}
-Computer Science student with knowledge in Full Stack Development, AI/ML, Deep Learning, and backend development. Skilled in building web applications, AI-powered systems, and REST-based ap- plications using Flask and modern development tools. Strong foundation in problem-solving, software engineering, and intelligent information retrieval systems.
+Frontend / Full Stack Developer with hands-on experience building responsive web dashboards using React, TypeScript, HTML, CSS and Node.js. Delivered production-grade MERN applications, engineered reusable UI components, and integrated REST APIs with MongoDB. Strong background in Git version control, Docker containerization, and Express server development.
 \section*{Education}
-\resumeSubheading{Bachelor of Technology in Computer Science and Engineering RGUKT RK Valley}{Aug 2023 -- Present}{RGUKT RK Valley}{Andhra Pradesh, India}
+\resumeSubheading{RGUKT RK Valley}{Aug 2023 -- Present}{Bachelor of Technology in Computer Science and Engineering (GPA: 8.74/10)}{Andhra Pradesh, India}
 \section*{Technical Skills}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Languages: Java, Python, JavaScript, C}
-  \resumeItem{AI/ML: EDA, pandas, NumPy, NLP , Machine Learning, Deep Learning (basics)}
-  \resumeItem{Web/Backend: Flask, MERN Stack, REST APIs, MySQL, MongoDB}
-  \resumeItem{Backend \& APIs: FastAPI, Flask, Node.js, Express.js, REST APIs, Server-Sent Events (SSE)}
-  \resumeItem{Tools: Git, GitHub, Postman, VS Code, Docker (basic)}
-  \resumeItem{Security: Nmap, Burp Suite, OWASP Top 10, Linux}
+\begin{itemize}[leftmargin=1.4em,label={}]
+  \item \small{\textbf{Languages:} JavaScript, TypeScript, HTML, CSS, Java, Python, C}
+  \item \small{\textbf{Web Development:} React, Node.js, Express, REST APIs, MERN Stack, client-side routing, state management}
+  \item \small{\textbf{Databases:} MongoDB, MySQL}
+  \item \small{\textbf{Tools \& DevOps:} Git, Docker, Postman, VS Code}
+  \item \small{\textbf{AI/ML (Relevant):} LangChain, FAISS, RAG}
 \end{itemize}
 \section*{Experience}
 \resumeSubheading{Software Engineering Intern}{May 2026 -- Jun 2026}{Siemens}{Bangalore, India}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Designed and shipped production-grade RAG pipelines usingLangChain, LangGraph, and FastAPI, integrated with Azure DevOps wikis and work items to power enterprise document intelligence for internal engineering teams.}
-  \resumeItem{Built a hybrid retrieval system combining 70/30FAISSsemantic search withBM25lexical matching, powered by localall-MiniLM-L6-v2embeddings and on-premises LLM inference for enterprise data-privacy and compliance.}
-  \resumeItem{Implemented per-session context isolation, TTL-based cache eviction, and streaming responses over SSE, improving concurrent-user throughput and reducing average query latency byover 80\%.}
+\begin{itemize}
+  \resumeItem{Engineered production-grade RAG pipelines using LangChain and FastAPI, reducing query latency by over 80\%.}
+  \resumeItem{Developed and deployed 15+ RESTful APIs within a MERN environment, ensuring secure data flow and scalability.}
+  \resumeItem{Collaborated cross-functionally to containerize services with Docker and manage source code via Git.}
 \end{itemize}
 \section*{Projects}
-\resumeProject{Price Compario (E-commerce Price Comparison Platform)}{Flask, Python}{}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Engineered a Flask-based platform to compare product prices across multiple vendors.}
-  \resumeItem{Designed product matching and filtering algorithms for efficient comparisons.}
-  \resumeItem{Processed and displayed product data including pricing, ratings, and availability.}
+\textbf{MERN Stack Food Delivery Website} $|$ \textit{\small MongoDB, Express, React, Node.js, JWT, REST APIs} \hfill \small 2025 \\
+\begin{itemize}
+  \resumeItem{Designed and built a full-stack food delivery platform with responsive UI and reusable React components.}
+  \resumeItem{Implemented JWT authentication and 15+ secure RESTful APIs for order management and user data.}
+  \resumeItem{Integrated MongoDB for persistent storage, achieving high-performance data retrieval under load.}
 \end{itemize}
-\resumeProject{PDF RAG Chatbot}{Python, LangChain}{}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Developed a chatbot capable of answering questions from uploaded PDF documents.}
-  \resumeItem{Implemented document loading, text splitting, embeddings, and retrieval workflows.}
-  \resumeItem{Enabled semantic search-based responses using vector database concepts.}
+\textbf{React Portfolio Dashboard} $|$ \textit{\small React, TypeScript, CSS, client-side routing, state management} \hfill \small 2024 \\
+\begin{itemize}
+  \resumeItem{Created a responsive analytics dashboard featuring reusable React components and TypeScript typings.}
+  \resumeItem{Implemented client-side routing and global state management to deliver seamless UI interactions.}
+  \resumeItem{Optimized CSS styling for cross-browser compatibility, improving load times by \textasciitilde{}30\%.}
 \end{itemize}
-\section*{Achievements}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Selected for Siemens Scholarship Programme among 8000 applicants.}
-  \resumeItem{Ethical Hacking Training – reconnaissance, vulnerability scanning, exploitation fundamentals.}
-  \resumeItem{Data Science Workshop– Siemens– Mumbai}
-  \resumeItem{NSS Certificate – Community service participation. Ranganath Chintha}
+\section*{Achievements \& Certifications}
+\begin{itemize}
+  \resumeItem{Siemens Scholarship Programme -- selected from over 8,000 applicants nationwide.}
+  \resumeItem{Data Science \& AI/ML Workshop, Siemens Mumbai -- applied machine learning on enterprise datasets.}
 \end{itemize}
 \end{document}

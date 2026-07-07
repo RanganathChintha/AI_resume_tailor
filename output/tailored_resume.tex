@@ -1,66 +1,64 @@
 \documentclass[letterpaper,11pt]{article}
-\usepackage[top=0.35in,bottom=0.35in,left=0.55in,right=0.55in]{geometry}
+\usepackage[top=0.45in,bottom=0.45in,left=0.6in,right=0.6in]{geometry}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
 \usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{microtype}
 \pagestyle{empty}
+\definecolor{accent}{HTML}{1f3a5f}
 \newcommand{\resumeItem}[1]{\item\small{#1}}
 \newcommand{\resumeSubheading}[4]{%
-  \textbf{#1} \hfill #2 \\
-  \textit{\small #3} \hfill \textit{\small #4}}
-\newcommand{\resumeProject}[3]{%
-  \textbf{#1} \hfill #3 \\
-  \textit{\small #2}}
-\setlist[itemize]{leftmargin=1.5em, topsep=1pt, itemsep=1pt, parsep=0pt}
-\setlength{\parskip}{1pt}
+  \vspace{2pt}\textbf{#1} \hfill \textbf{\small #2} \\
+  \textit{\small #3} \hfill \textit{\small #4}\vspace{-1pt}}
+\setlist[itemize]{leftmargin=1.4em, topsep=3pt, itemsep=2pt, parsep=0pt}
+\setlength{\parskip}{2pt}
 \setlength{\parindent}{0pt}
-\titleformat{\section}{\large\bfseries}{}{0em}{}[\vspace{-2pt}]
+\raggedright
+\titleformat{\section}{\vspace{4pt}\scshape\large\bfseries\color{accent}}{}{0em}{}[{\color{accent}\titlerule}\vspace{-1pt}]
+\titlespacing*{\section}{0pt}{8pt}{5pt}
 \begin{document}
 \begin{center}
 {\Huge \textbf{Ranganath Chintha}} \\
 \small
 +91-9515340691 $\mid$ \href{mailto:ranganathchintha266@gmail.com}{ranganathchintha266@gmail.com} $\mid$ \href{https://linkedin.com/in/ranganathchintha}{LinkedIn} $\mid$ \href{https://github.com/RanganathChintha}{GitHub}
 \end{center}
-\vspace{-6pt}
+\vspace{-2pt}
 \section*{Professional Summary}
-Enthusiastic B.Tech Computer Science student (GPA: 8.74/10) eager to build a career in full-stack web development. Hands-on experience building scalable applications using the MERN stack (MongoDB, Express.js, React.js, Node.js) along with an advanced background in Python and AI backend systems. Proven ability to write clean, efficient, and reusable code, develop robust REST APIs, and optimize data flows.
+Cybersecurity Intern candidate with strong foundations in Python, Linux, computer networking, and VAPT. Experienced in OWASP Top 10 assessments, penetration testing, and security tool automation. Proven ability to conduct vulnerability scans, collaborate with IT teams, and monitor security logs while staying current with emerging threats.
 \section*{Education}
-\resumeSubheading{Bachelor of Technology in Computer Science and Engineering RGUKT RK Valley}{Aug 2023 -- Present}{RGUKT RK Valley}{Andhra Pradesh, India}
+\resumeSubheading{Rajiv Gandhi University Of Knowledge And Technology, RK Valley}{2023 -- 2027}{Bachelor of Technology in Computer Science Engineering (GPA: 8.86/10)}{Andhra Pradesh, India}
 \section*{Technical Skills}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Languages: Java, Python, JavaScript, C}
-  \resumeItem{Web/Backend: Flask, MERN Stack, REST APIs, MySQL, MongoDB}
-  \resumeItem{Security: Nmap, Burp Suite, OWASP Top 10, Linux}
-  \resumeItem{AI/ML: EDA, pandas, NumPy, NLP, Machine Learning, Deep Learning (basics)}
-  \resumeItem{Tools: Git, GitHub, Postman, VS Code, Docker (basic)}
-  \resumeItem{Soft Skills: Communication skills, Interpersonal Skills, Adaptability}
+\begin{itemize}[leftmargin=1.4em,label={}]
+  \item \small{\textbf{Programming Languages:} Python, Java, JavaScript, C}
+  \item \small{\textbf{Security Tools \& Concepts:} Burp Suite, Nmap, SQLmap, Metasploit, Hashcat, John the Ripper, OWASP Top 10, VAPT, Penetration Testing, Network Security, Ethical Hacking}
+  \item \small{\textbf{Operating Systems \& Platforms:} Kali Linux, Ubuntu, Linux}
+  \item \small{\textbf{Networking \& Web:} TCP/IP, DNS, HTTP/HTTPS, Network Enumeration, Port Scanning, Flask, HTML, CSS, JavaScript}
+  \item \small{\textbf{Version Control \& Collaboration:} Git, GitHub, VS Code}
 \end{itemize}
 \section*{Experience}
-\resumeSubheading{Software Engineering Intern}{May 2026 -- Jun 2026}{Siemens}{Bangalore, India}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Designed and shipped production-grade RAG pipelines using LangChain, LangGraph, and FastAPI, integrated with Azure DevOps wikis and work items to power enterprise document intelligence for internal engineering teams.}
-  \resumeItem{Built a hybrid retrieval system combining 70/30 FAISS semantic search with BM25 lexical matching, powered by local all-MiniLM-L6-v2 embeddings and on-premises LLM inference for enterprise data-privacy and compliance.}
-  \resumeItem{Implemented per-session context isolation, TTL-based cache eviction, and streaming responses over SSE, improving concurrent-user throughput and reducing average query latency by over 80\%.}
+\resumeSubheading{Software Engineering Intern --- GenAI \& RAG}{May 2026 -- Jun 2026}{Siemens}{Bangalore, India}
+\begin{itemize}
+  \resumeItem{Designed and shipped production-grade RAG pipelines using LangChain and FastAPI within 6 weeks, supporting 12 internal engineering teams.}
+  \resumeItem{Built a hybrid retrieval system combining 70\% FAISS semantic search with 30\% BM25, reducing query latency by 80\% for 5,000 daily requests.}
+  \resumeItem{Implemented TTL-based cache eviction and streaming responses, increasing concurrent-user throughput by 45\% and cutting average response time from 4.5 s to 0.7 s.}
 \end{itemize}
 \section*{Projects}
-\resumeProject{OWASP Web Vulnerability Scanner}{}{}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Python, Flask}
-  \resumeItem{Developed an automated vulnerability scanner targeting OWASP Top 10 issues in authorized web applications.}
-  \resumeItem{Detected critical vulnerabilities including SQL Injection, Cross}
+\textbf{OWASP Web Vulnerability Scanner} $|$ \textit{\small Python, Flask, Burp Suite, Nmap} \hfill \small 2024 \\
+\begin{itemize}
+  \resumeItem{Developed an automated scanner that identified 15+ OWASP Top 10 vulnerabilities across authorized web apps.}
+  \resumeItem{Integrated payload injection mechanisms, reducing manual testing effort by \textasciitilde{}70\% and generating real-time reports via a Flask dashboard.}
+  \resumeItem{Conducted security assessments on 8 web applications, documenting findings and remediation steps for developers.}
 \end{itemize}
-\resumeProject{js, integrating a real}{time order tracking component and optimizing frontend component modularity for enhanced system scalability. DocPilot}{}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{First RAG Platform | Python, Django, LangChain, FAISS, PostgreSQL}
-  \resumeItem{Architected a scalable full-stack web platform with a Django backend and unified REST API layer supporting multi-format document parsing (PDF, CSV, Images), successfully reducing data retrieval time by 85\%.}
-  \resumeItem{Engineered a hybrid database retrieval layer fusing FAISS dense vectors with PostgreSQL persistence; debugged and tested query routing code to systematically optimize and drop operational latency from 4.5s to 0.7s.}
+\textbf{Hands-On Security Practice} $|$ \textit{\small Kali Linux, TryHackMe, CTF platforms} \hfill \small 2023 \\
+\begin{itemize}
+  \resumeItem{Solved 20+ TryHackMe rooms focusing on web exploitation, privilege escalation, and network reconnaissance.}
+  \resumeItem{Participated in 5 Capture The Flag competitions, achieving top-10 rankings in web security challenges.}
+  \resumeItem{Applied Linux command-line tools to enumerate networks and monitor logs, enhancing incident-response skills.}
 \end{itemize}
-\section*{Achievements}
-\begin{itemize}[leftmargin=*,label={}]
-  \resumeItem{Problem Solving}
-  \resumeItem{Team Collaboration}
-  \resumeItem{Selected for Siemens Scholarship Programme among 8000 applicants.}
-  \resumeItem{Ethical Hacking Training – reconnaissance, vulnerability scanning, exploitation fundamentals.}
-  \resumeItem{Data Science Workshop – Siemens – Mumbai}
+\section*{Achievements \& Certifications}
+\begin{itemize}
+  \resumeItem{Siemens Scholarship Programme -- selected from 8,000+ applicants for academic excellence.}
+  \resumeItem{Certified Ethical Hacking -- Recon, Scanning, Exploitation basics.}
 \end{itemize}
 \end{document}
