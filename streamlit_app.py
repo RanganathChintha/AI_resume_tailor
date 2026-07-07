@@ -72,18 +72,37 @@ def _parse_ats_report(log_text: str) -> dict:
     return report
 
 
-def _generate(job_description: str, use_llm: bool) -> dict:
+def _analyze(job_description: str) -> dict:
+    """Human-in-the-loop step 1: inspect the JD vs. resume before generating."""
+    cache_manager = ResumeCacheManager()
+    generator = ResumeGenerator()
+    master_data = cache_manager.get_resume_data()
+    analysis = generator.analyze_for_hitl(job_description, master_data)
+    analysis["master_data"] = master_data
+    return analysis
+
+
+def _generate(
+    job_description: str,
+    use_llm: bool,
+    master_data: str | None = None,
+    extra_skills: list[str] | None = None,
+    selected_projects: list[str] | None = None,
+) -> dict:
     """Run the tailoring pipeline, capturing logs and returning results."""
     cache_manager = ResumeCacheManager()
     generator = ResumeGenerator()
 
     log_buffer = io.StringIO()
     with contextlib.redirect_stdout(log_buffer):
-        master_data = cache_manager.get_resume_data()
+        if master_data is None:
+            master_data = cache_manager.get_resume_data()
         latex_code = generator.tailor_resume(
             jd_text=job_description,
             master_resume_text=master_data,
             use_llm_review=use_llm,
+            extra_skills=extra_skills,
+            selected_projects=selected_projects,
         )
         if not _is_valid_latex(latex_code):
             latex_code = _minimal_placeholder_latex(master_data)
@@ -192,32 +211,111 @@ with col_right:
         placeholder="Paste the full job description here...",
     )
 
-st.subheader("3. Generate")
-generate = st.button("🚀 Tailor my resume", type="primary", use_container_width=True)
+st.subheader("3. Review & generate")
+st.caption(
+    "Human-in-the-loop: first analyze the job description, then choose which "
+    "missing skills to add and which projects to feature before generating."
+)
+analyze = st.button("🔍 Analyze job description", use_container_width=True)
 
-if generate:
+if analyze:
     if not _list_saved_pdfs():
         st.error("Please upload at least one resume PDF first.")
     elif not job_description.strip():
         st.error("Please paste a job description.")
-    elif use_llm and not key_present:
-        st.error(
-            "AI tailoring is on but no API key is set. Enter a key in the sidebar, "
-            "or switch off AI tailoring to use offline keyword mode."
-        )
     else:
         try:
-            with st.spinner("Tailoring your resume..."):
-                result = _generate(job_description, use_llm)
-            st.session_state["result"] = result
-            st.session_state["pdf_path"] = (
-                _try_compile_pdf(result["latex"]) if want_pdf else None
-            )
-            st.success("Done! See results below.")
+            with st.spinner("Analyzing job description against your resume..."):
+                st.session_state["analysis"] = _analyze(job_description)
+                st.session_state["analysis_jd"] = job_description
+                st.session_state.pop("result", None)
+                st.session_state.pop("pdf_path", None)
         except FileNotFoundError as e:
             st.error(f"{e}")
-        except Exception as e:  # noqa: BLE001 - surface any pipeline error to the user
-            st.error(f"Something went wrong: {e}")
+        except Exception as e:  # noqa: BLE001
+            st.error(f"Something went wrong during analysis: {e}")
+
+analysis = st.session_state.get("analysis")
+if analysis:
+    # Invalidate stale analysis if the job description changed.
+    if st.session_state.get("analysis_jd", "") != job_description:
+        st.warning("Job description changed since the last analysis. Re-run 'Analyze' to refresh.")
+
+    st.markdown("#### 🧩 Skills review")
+    matched = analysis.get("matched_skills", [])
+    missing = analysis.get("missing_skills", [])
+
+    if matched:
+        st.markdown("**Already in your resume:** " + ", ".join(f"`{s}`" for s in matched))
+    else:
+        st.caption("No JD keywords matched your current resume.")
+
+    chosen_skills: list[str] = []
+    if missing:
+        st.markdown(
+            "**Missing JD skills** — select the ones you genuinely have so they can "
+            "be added to your resume. Only pick skills you can honestly claim."
+        )
+        chosen_skills = st.multiselect(
+            "Skills to add",
+            options=missing,
+            default=[],
+            help="These will be inserted into your Technical Skills section.",
+        )
+    else:
+        st.success("Great — your resume already covers the key JD skills.")
+
+    st.markdown("#### 📌 Project selection")
+    project_titles = [p.get("title", "") for p in analysis.get("projects", []) if p.get("title")]
+    chosen_projects: list[str] = []
+    if project_titles:
+        labels = {
+            p["title"]: (f"{p['title']} — {p['tech']}" if p.get("tech") else p["title"])
+            for p in analysis.get("projects", [])
+            if p.get("title")
+        }
+        st.markdown("Choose up to **2** projects to feature (most relevant to this role):")
+        chosen_projects = st.multiselect(
+            "Projects to include",
+            options=project_titles,
+            default=[],
+            format_func=lambda t: labels.get(t, t),
+            help="Leave empty to let the tailor pick the most JD-relevant projects.",
+        )
+        if len(chosen_projects) > 2:
+            st.warning("Only the first 2 selected projects will be used.")
+            chosen_projects = chosen_projects[:2]
+    else:
+        st.caption("No distinct projects detected in your resume.")
+
+    st.markdown("#### 🚀 Generate")
+    generate = st.button("Generate tailored resume", type="primary", use_container_width=True)
+
+    if generate:
+        if use_llm and not key_present:
+            st.error(
+                "AI tailoring is on but no API key is set. Enter a key in the sidebar, "
+                "or switch off AI tailoring to use offline keyword mode."
+            )
+        else:
+            try:
+                with st.spinner("Tailoring your resume..."):
+                    result = _generate(
+                        job_description,
+                        use_llm,
+                        master_data=analysis.get("master_data"),
+                        extra_skills=chosen_skills,
+                        selected_projects=chosen_projects,
+                    )
+                st.session_state["result"] = result
+                st.session_state["pdf_path"] = (
+                    _try_compile_pdf(result["latex"]) if want_pdf else None
+                )
+                st.success("Done! See results below.")
+            except FileNotFoundError as e:
+                st.error(f"{e}")
+            except Exception as e:  # noqa: BLE001 - surface any pipeline error to the user
+                st.error(f"Something went wrong: {e}")
 
 
 # --------------------------------------------------------------------------- #

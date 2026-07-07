@@ -185,7 +185,13 @@ Provide 1-2 JD-RELEVANT items in "projects" (never pad with an unrelated project
 
         return found[:limit]
 
-    def _build_prompt(self, jd_text: str, master_resume_text: str) -> list:
+    def _build_prompt(
+        self,
+        jd_text: str,
+        master_resume_text: str,
+        extra_skills: Optional[List[str]] = None,
+        selected_projects: Optional[List[str]] = None,
+    ) -> list:
         keywords = self.extract_jd_keywords(jd_text)
         keyword_block = ', '.join(keywords) if keywords else '(none detected)'
         master = master_resume_text.strip()
@@ -194,6 +200,24 @@ Provide 1-2 JD-RELEVANT items in "projects" (never pad with an unrelated project
         jd = jd_text.strip()
         if len(jd) > 2500:
             jd = jd[:2500]
+
+        # Human-in-the-loop directives from the user's review step.
+        hitl_parts = []
+        extra_skills = [s.strip() for s in (extra_skills or []) if s and s.strip()]
+        selected_projects = [p.strip() for p in (selected_projects or []) if p and p.strip()]
+        if extra_skills:
+            hitl_parts.append(
+                "USER-CONFIRMED SKILLS (the candidate confirmed they genuinely have these JD skills - "
+                "you MUST include them verbatim in the Technical Skills section, and weave them into "
+                "summary/experience/project bullets where truthful): " + ', '.join(extra_skills)
+            )
+        if selected_projects:
+            hitl_parts.append(
+                "USER-SELECTED PROJECTS (include ONLY these projects, matched by title, and no others - "
+                "this overrides your own relevance judgement): " + '; '.join(selected_projects)
+            )
+        hitl_block = ('\n\n' + '\n\n'.join(hitl_parts)) if hitl_parts else ''
+
         return [
             SystemMessage(content=self.SYSTEM_PROMPT),
             HumanMessage(content=f"""JOB DESCRIPTION:
@@ -203,7 +227,7 @@ PRIORITY KEYWORD LIST (incorporate every one the candidate can truthfully claim,
 {keyword_block}
 
 MASTER RESUME:
-{master}
+{master}{hitl_block}
 
 Return ONLY the tailored resume JSON:"""),
         ]
@@ -341,12 +365,23 @@ Return ONLY the tailored resume JSON:"""),
 
         return result
 
-    def tailor(self, jd_text: str, master_resume_text: str) -> Optional[Dict[str, Any]]:
+    def tailor(
+        self,
+        jd_text: str,
+        master_resume_text: str,
+        extra_skills: Optional[List[str]] = None,
+        selected_projects: Optional[List[str]] = None,
+    ) -> Optional[Dict[str, Any]]:
         """
         Produce tailored resume content as a normalised dict, or None on failure.
         Raises no exceptions to the caller for content issues; returns None instead.
         """
-        messages = self._build_prompt(jd_text, master_resume_text)
+        messages = self._build_prompt(
+            jd_text,
+            master_resume_text,
+            extra_skills=extra_skills,
+            selected_projects=selected_projects,
+        )
         response = self.llm.invoke(messages)
         raw = response.content if isinstance(response.content, str) else str(response.content)
 

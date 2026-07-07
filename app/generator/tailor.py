@@ -523,6 +523,37 @@ class ResumeGenerator:
         return title, tech, year
 
     def _extract_projects(self, sections: List[Tuple[str, str]], filterer: ResumeFilter) -> List[Dict[str, object]]:
+        projects = self._parse_all_project_blocks(sections)
+
+        scored: List[Tuple[int, Dict[str, object]]] = []
+        for project in projects:
+            if not project['bullets']:
+                continue
+            score = self._score_text(project['header'] + ' ' + ' '.join(project['bullets']), filterer)
+            scored.append((score, project))
+
+        scored.sort(key=lambda pair: pair[0], reverse=True)
+
+        # Keep only projects that are actually relevant to the JD (positive score).
+        # Never pad the list with an unrelated project just to reach 2. If nothing
+        # scores (e.g. a very short JD), fall back to the single top project so the
+        # section is not empty.
+        relevant = [(score, project) for score, project in scored if score > 0]
+        if relevant:
+            selection = relevant[:2]
+        elif scored:
+            selection = scored[:1]
+        else:
+            selection = []
+
+        chosen = []
+        for _, project in selection:
+            chosen.append(self._finalise_project(project))
+
+        return chosen[:2]
+
+    def _parse_all_project_blocks(self, sections: List[Tuple[str, str]]) -> List[Dict[str, object]]:
+        """Parse the raw project section(s) into a deduped list of {header, bullets}."""
         project_blocks = [text for name, text in sections if name == 'projects' and text]
         projects: List[Dict[str, object]] = []
 
@@ -531,10 +562,20 @@ class ResumeGenerator:
             rf'(?<=[\.\n])\s*(?=[A-Z][A-Za-z0-9 &()\-]+.*?(?:\||{tech_keywords}))',
             re.IGNORECASE
         )
+        # A new project header can get merged into the tail of the previous
+        # bullet during normalization (e.g. "...uptime NetScanner | Python | 2020").
+        # Detect a capitalized title followed by " | tech" or " | year" and split
+        # a fresh line before it, even mid-sentence.
+        new_project_header = re.compile(
+            r'(?<=[a-z0-9%)])\s*'
+            r'(?=[A-Z][A-Za-z0-9]+(?:\s+[A-Z][A-Za-z0-9]+){0,3}\s*\|\s*'
+            rf'(?:{tech_keywords}|\d{{4}}))'
+        )
         tech_separator = re.compile(rf'(?<=[^\s\|\-–—])(?={tech_keywords})', re.IGNORECASE)
         inline_project_bullet = re.compile(r'\s*[–—-]\s*(?=[A-Z][a-z]|•|\*)')
 
         for block in project_blocks:
+            block = new_project_header.sub('\n', block)
             block = tech_separator.sub(' | ', block)
             block = header_boundary.sub('\n', block)
             block = inline_project_bullet.sub('\n• ', block)
@@ -564,45 +605,23 @@ class ResumeGenerator:
             if norm_title not in seen_titles:
                 seen_titles.add(norm_title)
                 deduped.append(p)
-        projects = deduped
+        return deduped
 
-        scored: List[Tuple[int, Dict[str, object]]] = []
-        for project in projects:
-            if not project['bullets']:
-                continue
-            score = self._score_text(project['header'] + ' ' + ' '.join(project['bullets']), filterer)
-            scored.append((score, project))
+    def _finalise_project(self, project: Dict[str, object]) -> Dict[str, object]:
+        """Turn a raw {header, bullets} project into the rendered {title, tech, year, bullets}."""
+        title, tech, year = self._parse_project_header(project['header'])
+        bullets = list(project['bullets'])
+        # If the tech stack leaked in as the first bullet (e.g. "Python, Flask"),
+        # promote it to the tech field instead of showing it as a bullet.
+        if not tech and bullets and self._looks_like_tech_list(bullets[0]):
+            tech = bullets.pop(0).strip().rstrip('.')
+        return {
+            'title': title or project['header'],
+            'tech': tech,
+            'year': year,
+            'bullets': bullets[:3],
+        }
 
-        scored.sort(key=lambda pair: pair[0], reverse=True)
-
-        # Keep only projects that are actually relevant to the JD (positive score).
-        # Never pad the list with an unrelated project just to reach 2. If nothing
-        # scores (e.g. a very short JD), fall back to the single top project so the
-        # section is not empty.
-        relevant = [(score, project) for score, project in scored if score > 0]
-        if relevant:
-            selection = relevant[:2]
-        elif scored:
-            selection = scored[:1]
-        else:
-            selection = []
-
-        chosen = []
-        for _, project in selection:
-            title, tech, year = self._parse_project_header(project['header'])
-            bullets = project['bullets'][:]
-            # If the tech stack leaked in as the first bullet (e.g. "Python, Flask"),
-            # promote it to the tech field instead of showing it as a bullet.
-            if not tech and bullets and self._looks_like_tech_list(bullets[0]):
-                tech = bullets.pop(0).strip().rstrip('.')
-            chosen.append({
-                'title': title or project['header'],
-                'tech': tech,
-                'year': year,
-                'bullets': bullets[:3]
-            })
-
-        return chosen[:2]
 
     @staticmethod
     def _looks_like_tech_list(text: str) -> bool:
@@ -1049,10 +1068,153 @@ class ResumeGenerator:
 
         return base
 
-    def tailor_resume(self, jd_text: str, master_resume_text: str, use_llm_review: bool = True) -> str:
+    @staticmethod
+    def _norm_title(value: str) -> str:
+        return re.sub(r'[^a-z0-9]', '', str(value).lower())
+
+    def _select_projects_deterministic(
+        self,
+        sections: List[Tuple[str, str]],
+        filterer: ResumeFilter,
+        selected_projects: List[str],
+    ) -> List[Dict[str, object]]:
+        """Deterministic project selection that honours an explicit user choice."""
+        if not selected_projects:
+            return self._extract_projects(sections, filterer)
+
+        wanted = {self._norm_title(t) for t in selected_projects}
+        chosen = []
+        for project in self._parse_all_project_blocks(sections):
+            title, _tech, _year = self._parse_project_header(project['header'])
+            norm = self._norm_title(title or project['header'])
+            if any(norm and (norm in w or w in norm) for w in wanted):
+                chosen.append(self._finalise_project(project))
+        # If nothing matched (e.g. titles differ), fall back to scored selection.
+        return chosen[:2] if chosen else self._extract_projects(sections, filterer)
+
+    @staticmethod
+    def _merge_extra_skills(skills: List[object], extra_skills: List[str]) -> List[object]:
+        """Ensure user-approved JD skills appear in the skills section exactly once."""
+        if not extra_skills:
+            return skills
+
+        # Collect everything already present (across all categories) for dedup.
+        present: set = set()
+        for item in skills:
+            if isinstance(item, dict):
+                blob = f"{item.get('category', '')} {item.get('items', '')}"
+            else:
+                blob = str(item)
+            for tok in re.split(r'[,:/|]', blob.lower()):
+                tok = tok.strip()
+                if tok:
+                    present.add(tok)
+
+        to_add = [s for s in extra_skills if s.strip().lower() not in present]
+        if not to_add:
+            return skills
+
+        merged = list(skills)
+        # Reuse an existing "additional"/"other"/"core" category if one exists.
+        for item in merged:
+            if isinstance(item, dict) and re.search(r'other|additional|core', str(item.get('category', '')), re.IGNORECASE):
+                existing = str(item.get('items', '')).strip()
+                item['items'] = (existing + ', ' if existing else '') + ', '.join(to_add)
+                return merged
+
+        merged.append({'category': 'Additional Skills', 'items': ', '.join(to_add)})
+        return merged
+
+    def _enforce_selected_projects(
+        self,
+        projects: List[Dict[str, object]],
+        selected_projects: List[str],
+        sections: List[Tuple[str, str]],
+    ) -> List[Dict[str, object]]:
+        """Reorder/filter already-generated projects to match the user's selection."""
+        if not selected_projects:
+            return projects
+
+        wanted = [self._norm_title(t) for t in selected_projects]
+
+        def matches(title: str, want: str) -> bool:
+            norm = self._norm_title(title)
+            return bool(norm) and (norm in want or want in norm)
+
+        ordered: List[Dict[str, object]] = []
+        used = set()
+        for want in wanted:
+            for idx, proj in enumerate(projects):
+                if idx in used:
+                    continue
+                if matches(str(proj.get('title', '')), want):
+                    ordered.append(proj)
+                    used.add(idx)
+                    break
+
+        # If the generated content did not include a selected project, pull it
+        # straight from the parsed master resume so the user's choice is honoured.
+        if len(ordered) < len(wanted):
+            for want in wanted:
+                if any(matches(str(p.get('title', '')), want) for p in ordered):
+                    continue
+                for raw in self._parse_all_project_blocks(sections):
+                    title = self._parse_project_header(raw['header'])[0] or raw['header']
+                    if matches(title, want):
+                        ordered.append(self._finalise_project(raw))
+                        break
+
+        return (ordered or projects)[:2]
+
+    def analyze_for_hitl(self, jd_text: str, master_resume_text: str) -> Dict[str, object]:
+        """
+        Produce data for a human-in-the-loop review step BEFORE generating the resume.
+
+        Returns:
+            {
+                'missing_skills':  JD skills/keywords NOT found in the resume,
+                'matched_skills':  JD skills/keywords already present in the resume,
+                'projects':        [{'title', 'tech'}] for every project in the resume,
+            }
+        """
+        normalized_text = self._normalize_text(master_resume_text)
+        sections = self._split_sections(normalized_text)
+
+        jd_keywords = LLMResumeTailor.extract_jd_keywords(jd_text)
+        resume_lower = normalized_text.lower()
+        matched_skills = [kw for kw in jd_keywords if kw.lower() in resume_lower]
+        missing_skills = [kw for kw in jd_keywords if kw.lower() not in resume_lower]
+
+        projects = []
+        for project in self._parse_all_project_blocks(sections):
+            title, tech, _year = self._parse_project_header(project['header'])
+            bullets = list(project['bullets'])
+            if not tech and bullets and self._looks_like_tech_list(bullets[0]):
+                tech = bullets[0].strip().rstrip('.')
+            clean_title = (title or project['header']).strip()
+            if clean_title:
+                projects.append({'title': clean_title, 'tech': tech.strip()})
+
+        return {
+            'missing_skills': missing_skills,
+            'matched_skills': matched_skills,
+            'projects': projects,
+        }
+
+    def tailor_resume(
+        self,
+        jd_text: str,
+        master_resume_text: str,
+        use_llm_review: bool = True,
+        extra_skills: Optional[List[str]] = None,
+        selected_projects: Optional[List[str]] = None,
+    ) -> str:
         normalized_text = self._normalize_text(master_resume_text)
         sections = self._split_sections(normalized_text)
         filterer = ResumeFilter(normalized_text, jd_text)
+
+        extra_skills = [s.strip() for s in (extra_skills or []) if s and s.strip()]
+        selected_projects = [p.strip() for p in (selected_projects or []) if p and p.strip()]
 
         # Contact info is factual and safest to extract deterministically.
         contact = self._extract_contact(normalized_text)
@@ -1068,7 +1230,12 @@ class ResumeGenerator:
                       "Add your key to a .env file (see .env.example) for best results.")
             else:
                 try:
-                    content = tailor.tailor(jd_text, normalized_text)
+                    content = tailor.tailor(
+                        jd_text,
+                        normalized_text,
+                        extra_skills=extra_skills,
+                        selected_projects=selected_projects,
+                    )
                     if content is None:
                         print("[WARN] AI tailoring returned no usable content; "
                               "falling back to keyword-based extraction.")
@@ -1088,7 +1255,7 @@ class ResumeGenerator:
                 'education': self._extract_education(sections),
                 'skills': self._extract_skills(sections, filterer, jd_text),
                 'experience': self._extract_experience(sections, filterer),
-                'projects': self._extract_projects(sections, filterer),
+                'projects': self._select_projects_deterministic(sections, filterer, selected_projects),
                 'achievements': self._extract_achievements(sections, filterer, contact.get('name', '')),
             }
             if content is not None and self._content_is_empty(content):
@@ -1103,6 +1270,16 @@ class ResumeGenerator:
             print("[WARN] Could not extract structured sections; "
                   "generating a minimal resume from the raw resume text.")
             content = self._build_minimal_content(content, normalized_text)
+
+        # Honour human-in-the-loop choices regardless of which path produced the
+        # content: guarantee user-approved skills appear, and enforce the user's
+        # project selection when they made one.
+        if extra_skills:
+            content['skills'] = self._merge_extra_skills(content.get('skills', []) or [], extra_skills)
+        if selected_projects:
+            content['projects'] = self._enforce_selected_projects(
+                content.get('projects', []) or [], selected_projects, sections
+            )
 
         try:
             self._report_match(jd_text, content)
